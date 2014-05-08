@@ -294,6 +294,12 @@ produce ::
   -> List a
 produce f s = s :. (produce f (f s))
 
+produce' ::
+  (a -> a)
+  -> a
+  -> List a
+produce' f s = unfoldr (\x -> Full (x, f x)) s
+
 -- | Do anything other than reverse a list.
 -- Is it even possible?
 --
