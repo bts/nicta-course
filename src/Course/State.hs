@@ -35,29 +35,30 @@ newtype State s a =
 -- >>> runState ((+1) <$> pure 0) 0
 -- (1,0)
 instance Functor (State s) where
-  (<$>) =
-      error "todo"
+  f <$> State rs = State $ \s0 -> let (a, s1) = rs s0
+                                  in (f a, s1)
 
 -- | Implement the `Apply` instance for `State s`.
 -- >>> runState (pure (+1) <*> pure 0) 0
 -- (1,0)
 instance Apply (State s) where
-  (<*>) =
-    error "todo"
+  State rsl <*> State rsr = State $ \s0 -> let (f, s1) = rsl s0
+                                               (v, s2) = rsr s1
+                                           in (f v, s2)
 
 -- | Implement the `Applicative` instance for `State s`.
 -- >>> runState (pure 2) 0
 -- (2,0)
 instance Applicative (State s) where
-  pure =
-    error "todo"
+  pure v = State $ \s -> (v, s)
 
 -- | Implement the `Bind` instance for `State s`.
 -- >>> runState ((const $ put 2) =<< put 1) 0
 -- ((),2)
 instance Bind (State s) where
-  (=<<) =
-    error "todo"
+  f =<< State rsr = State $ \s0 -> let (v0, s1) = rsr s0
+                                       State rsl = f v0
+                                   in rsl s1
 
 instance Monad (State s) where
 
@@ -68,8 +69,7 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo"
+exec (State rs) s = snd $ rs s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -78,8 +78,7 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo"
+eval (State rs) s = fst $ rs s
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -87,8 +86,7 @@ eval =
 -- (0,0)
 get ::
   State s s
-get =
-  error "todo"
+get = State $ \s -> (s, s)
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -97,8 +95,7 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo"
+put s = State $ \_ -> ((), s)
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -119,8 +116,11 @@ findM ::
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo"
+findM g = foldRight test (return Empty)
+  where test a macc =
+          g a >>= (\t -> if t
+                         then return $ Full a
+                         else macc)
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
