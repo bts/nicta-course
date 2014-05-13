@@ -62,8 +62,11 @@ the contents of c
 -- /Tip:/ use @getArgs@ and @run@
 main ::
   IO ()
-main =
-  error "todo"
+main = do
+  -- for some reason I can't pattern match here, maybe due to using nicta's custom getArgs:
+  args <- getArgs
+  let (filename :. Nil) = args
+  run filename
 
 type FilePath =
   Chars
@@ -72,31 +75,32 @@ type FilePath =
 run ::
   Chars
   -> IO ()
-run =
-  error "todo"
+run tocFilename = do
+  (_, toc) <- getFile tocFilename
+  files <- getFiles $ lines toc
+  printFiles files
 
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo"
+getFiles = sequence . map getFile
 
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo"
+getFile path = lift2 (,) (return path) $ readFile path
 
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
-printFiles =
-  error "todo"
+printFiles files = (sequence $ (uncurry printFile) <$> files) >> return ()
 
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo"
-
+printFile path contents = do
+  putStr "============ "
+  putStrLn path
+  putStrLn contents
+  putStr ""
