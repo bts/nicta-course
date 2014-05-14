@@ -13,6 +13,7 @@ import Course.Applicative
 import Course.Bind
 import Course.Monad
 import qualified Data.Set as S
+import Data.Char
 
 -- $setup
 -- >>> import Test.QuickCheck.Function
@@ -133,8 +134,9 @@ firstRepeat ::
   Ord a =>
   List a
   -> Optional a
-firstRepeat =
-  error "todo"
+firstRepeat as = eval findFirst S.empty
+  where findFirst = findM mp as
+        mp x = get >>= \s -> put (S.insert x s) >> get >>= \s' -> return $ s == s'
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -146,10 +148,11 @@ distinct ::
   Ord a =>
   List a
   -> List a
-distinct =
-  error "todo"
+distinct as = eval removeDupes S.empty
+  where removeDupes = filtering p as
+        p x = get >>= \s -> put (S.insert x s) >> return (not $ S.member x s)
 
--- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
+-- | A happy number is a positive integer, where the sum of the squares of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
 -- because it results in a recurring sequence.
 --
@@ -170,8 +173,14 @@ distinct =
 --
 -- >>> isHappy 44
 -- True
+square :: Num a => a -> a
+square x = x * x
+
+hStep :: Integer -> Integer
+hStep x = foldLeft (+) 0 squaredDigits
+  where squaredDigits = map (square . toInteger . digitToInt) $ listh $ show x
+
 isHappy ::
   Integer
   -> Bool
-isHappy =
-  error "todo"
+isHappy x = contains 1 $ firstRepeat $ produce hStep x
