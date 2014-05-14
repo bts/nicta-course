@@ -35,8 +35,7 @@ newtype StateT s f a =
 -- >>> runStateT ((+1) <$> (pure 2) :: StateT Int List Int) 0
 -- [(3,0)]
 instance Functor f => Functor (StateT s f) where
-  (<$>) =
-    error "todo"
+  f <$> st = StateT $ \s0 -> (\(a, s1) -> (f a, s1)) <$> runStateT st s0
 
 -- | Implement the `Apply` instance for @StateT s f@ given a @Bind f@.
 --
