@@ -273,7 +273,11 @@ distinctG ::
   (Integral a, Show a) =>
   List a
   -> Logger Chars (Optional (List a))
-distinctG = error "todo"
---distinctG as = evalT (filtering p as) S.empty
---  where p = _
---  where (p :: a -> StateT S.Set (OptionalT (Logger Chars)) Bool) = _
+distinctG as = runOptionalT $ evalT (filtering p as) S.empty
+  where p a = StateT $ \s ->
+          OptionalT $ if a > 100
+                      then log1 (fromString $ "aborting > 100: " P.++ (show a)) Empty
+                      else let res = Full (a `S.notMember` s, a `S.insert` s)
+                           in if even a
+                              then log1 (fromString $ "even number: " P.++ (show a)) res
+                              else return res
