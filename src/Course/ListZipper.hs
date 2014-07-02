@@ -677,8 +677,12 @@ instance Comonad ListZipper where
 -- >>> traverse id (zipper [Full 1, Full 2, Full 3] (Full 4) [Empty, Full 6, Full 7])
 -- Empty
 instance Traversable ListZipper where
-  traverse =
-    error "todo"
+  traverse f z = let (ListZipper ls x rs) = z
+                     mxs = traverse f $ (reverse ls) ++ (x :. rs)
+                 in (\xs -> let n = length ls
+                                ls' = take n xs
+                                (x':.rs') = drop n xs
+                            in ListZipper (reverse ls') x' rs') <$> mxs
 
 -- | Implement the `Traversable` instance for `MaybeListZipper`.
 --
