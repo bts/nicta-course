@@ -310,8 +310,8 @@ digit = satisfy isDigit
 -- functions.
 natural ::
   Parser Int
-natural =
-  error "todo"
+natural = flbindParser (list1 digit) (\s -> let Full int = read s
+                                            in valueParser int)
 
 --
 -- | Return a parser that produces a space character but fails if
@@ -323,8 +323,7 @@ natural =
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isSpace@ functions.
 space ::
   Parser Char
-space =
-  error "todo"
+space = is ' '
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if
@@ -336,8 +335,7 @@ space =
 -- /Tip:/ Use the @list1@ and @space@ functions.
 spaces1 ::
   Parser Chars
-spaces1 =
-  error "todo"
+spaces1 = list1 space
 
 -- | Return a parser that produces a lower-case character but fails if
 --
@@ -348,8 +346,7 @@ spaces1 =
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isLower@ functions.
 lower ::
   Parser Char
-lower =
-  error "todo"
+lower = satisfy isLower
 
 -- | Return a parser that produces an upper-case character but fails if
 --
@@ -360,8 +357,7 @@ lower =
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isUpper@ functions.
 upper ::
   Parser Char
-upper =
-  error "todo"
+upper = satisfy isUpper
 
 -- | Return a parser that produces an alpha character but fails if
 --
@@ -372,8 +368,7 @@ upper =
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isAlpha@ functions.
 alpha ::
   Parser Char
-alpha =
-  error "todo"
+alpha = satisfy isAlpha
 
 -- | Return a parser that sequences the given list of parsers by producing all their results
 -- but fails on the first failing parser of the list.
