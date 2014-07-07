@@ -150,8 +150,10 @@ bindParser ::
   (a -> Parser b)
   -> Parser a
   -> Parser b
-bindParser =
-  error "todo"
+bindParser f p = P (\i -> case parse p i of
+                       Result i' a -> let p' = f a
+                                      in parse p' i'
+                       ErrorResult e -> ErrorResult e)
 
 -- | This is @bindParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -180,8 +182,9 @@ flbindParser =
   Parser a
   -> Parser b
   -> Parser b
-(>>>) =
-  error "todo"
+p >>> p' = P (\i -> case parse p i of
+                 Result i' _ -> parse p' i'
+                 ErrorResult e -> ErrorResult e)
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -204,8 +207,9 @@ flbindParser =
   Parser a
   -> Parser a
   -> Parser a
-(|||) =
-  error "todo"
+p ||| p' = P (\i -> case parse p i of
+                 ErrorResult _ -> parse p' i
+                 r -> r)
 
 infixl 3 |||
 
@@ -233,8 +237,7 @@ infixl 3 |||
 list ::
   Parser a
   -> Parser (List a)
-list =
-  error "todo"
+list p = flbindParser p (\a -> P (\i -> parse (mapParser (a:.) (list p)) i)) ||| valueParser Nil
 
 -- | Return a parser that produces at least one value from the given parser then
 -- continues producing a list of values from the given parser (to ultimately produce a non-empty list).
@@ -253,8 +256,7 @@ list =
 list1 ::
   Parser a
   -> Parser (List a)
-list1 =
-  error "todo"
+list1 p = flbindParser p (\a -> P (\i -> parse (mapParser (a:.) (list p)) i))
 
 -- | Return a parser that produces a character but fails if
 --
@@ -272,8 +274,9 @@ list1 =
 satisfy ::
   (Char -> Bool)
   -> Parser Char
-satisfy =
-  error "todo"
+satisfy test = flbindParser character (\c -> if test c
+                                             then valueParser c
+                                             else unexpectedCharParser c)
 
 -- | Return a parser that produces the given character but fails if
 --
@@ -284,8 +287,7 @@ satisfy =
 -- /Tip:/ Use the @satisfy@ function.
 is ::
   Char -> Parser Char
-is =
-  error "todo"
+is c = satisfy (==c)
 
 -- | Return a parser that produces a character between '0' and '9' but fails if
 --
@@ -296,8 +298,7 @@ is =
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isDigit@ functions.
 digit ::
   Parser Char
-digit =
-  error "todo"
+digit = satisfy isDigit
 
 -- | Return a parser that produces zero or a positive integer but fails if
 --
