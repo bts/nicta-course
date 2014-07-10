@@ -384,8 +384,7 @@ alpha = satisfy isAlpha
 sequenceParser ::
   List (Parser a)
   -> Parser (List a)
-sequenceParser =
-  error "todo"
+sequenceParser ps = foldRight (\p lp -> flbindParser p (\a -> mapParser (a:.) lp)) (valueParser Nil) ps
 
 -- | Return a parser that produces the given number of values off the given parser.
 -- This parser fails if the given parser fails in the attempt to produce the given number of values.
@@ -401,8 +400,7 @@ thisMany ::
   Int
   -> Parser a
   -> Parser (List a)
-thisMany =
-  error "todo"
+thisMany n p = sequenceParser $ replicate n p
 
 -- | Write a parser for Person.age.
 --
@@ -420,8 +418,7 @@ thisMany =
 -- True
 ageParser ::
   Parser Int
-ageParser =
-  error "todo"
+ageParser = natural
 
 -- | Write a parser for Person.firstName.
 -- /First Name: non-empty string that starts with a capital letter and is followed by zero or more lower-case letters/
@@ -435,8 +432,7 @@ ageParser =
 -- True
 firstNameParser ::
   Parser Chars
-firstNameParser =
-  error "todo"
+firstNameParser = flbindParser upper (\u -> mapParser (u:.) (list lower))
 
 -- | Write a parser for Person.surname.
 --
@@ -454,8 +450,9 @@ firstNameParser =
 -- True
 surnameParser ::
   Parser Chars
-surnameParser =
-  error "todo"
+surnameParser = flbindParser upper (
+  \u -> flbindParser (thisMany 5 lower) (
+    \ls -> mapParser ((u:.ls) ++) (list lower)))
 
 -- | Write a parser for Person.smoker.
 --
@@ -473,8 +470,7 @@ surnameParser =
 -- True
 smokerParser ::
   Parser Char
-smokerParser =
-  error "todo"
+smokerParser = is 'y' ||| is 'n'
 
 -- | Write part of a parser for Person.phoneBody.
 -- This parser will only produce a string of digits, dots or hyphens.
@@ -495,8 +491,7 @@ smokerParser =
 -- Result >a123-456< ""
 phoneBodyParser ::
   Parser Chars
-phoneBodyParser =
-  error "todo"
+phoneBodyParser = list (digit ||| is '-' ||| is '.')
 
 -- | Write a parser for Person.phone.
 --
@@ -517,8 +512,10 @@ phoneBodyParser =
 -- True
 phoneParser ::
   Parser Chars
-phoneParser =
-  error "todo"
+phoneParser = flbindParser digit (
+  \d -> flbindParser phoneBodyParser (
+    \b -> flbindParser (is '#') (
+      \_ -> valueParser $ d :. b)))
 
 -- | Write a parser for Person.
 --
@@ -567,7 +564,12 @@ phoneParser =
 personParser ::
   Parser Person
 personParser =
-  error "todo"
+  flbindParser ageParser $
+  \a -> flbindParser (spaces1 >>> firstNameParser) $
+  \f -> flbindParser (spaces1 >>> surnameParser) $
+  \l -> flbindParser (spaces1 >>> smokerParser) $
+  \s -> flbindParser (spaces1 >>> phoneParser) $
+  \p -> valueParser $ Person a f l s p
 
 -- Make sure all the tests pass!
 
@@ -575,23 +577,22 @@ personParser =
 -- | Write a Functor instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.
 instance Functor Parser where
-  (<$>) =
-     error "todo"
+  (<$>) = mapParser
 
 -- | Write a Apply instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.
 instance Apply Parser where
-  (<*>) =
-    error "todo"
+  pf <*> pv =
+    flbindParser pf $
+    \f -> flbindParser pv $
+    \v -> valueParser $ f v
 
 -- | Write an Applicative functor instance for a @Parser@.
 instance Applicative Parser where
-  pure =
-    error "todo"
+  pure = valueParser
 
 -- | Write a Bind instance for a @Parser@.
 instance Bind Parser where
-  (=<<) =
-    error "todo"
+  (=<<) = bindParser
 
 instance Monad Parser where
