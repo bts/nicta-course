@@ -183,8 +183,11 @@ between ::
   -> Parser c
   -> Parser a
   -> Parser a
-between =
-  error "todo"
+between op cp p = do
+  op
+  a <- p
+  cp
+  return a
 
 -- | Write a function that applies the given parser in between the two given characters.
 --
@@ -206,8 +209,7 @@ betweenCharTok ::
   -> Char
   -> Parser a
   -> Parser a
-betweenCharTok =
-  error "todo"
+betweenCharTok o c = between (charTok o) (charTok c)
 
 -- | Write a function that parses the character 'u' followed by 4 hex digits and return the character value.
 --
@@ -229,8 +231,12 @@ betweenCharTok =
 -- True
 hex ::
   Parser Char
-hex =
-  error "todo"
+hex = do
+  is 'u'
+  hexStr <- thisMany 4 $ satisfy isHexDigit
+  case (readHex hexStr) of
+    Full n -> return $ chr n
+    Empty -> failed
 
 -- | Write a function that produces a non-empty list of values coming off the given parser (which must succeed at least once),
 -- separated by the second given parser.
@@ -252,8 +258,10 @@ sepby1 ::
   Parser a
   -> Parser s
   -> Parser (List a)
-sepby1 =
-  error "todo"
+sepby1 p sp = do
+  a <- p
+  as <- list $ sp >> p
+  return $ a :. as
 
 -- | Write a function that produces a list of values coming off the given parser,
 -- separated by the second given parser.
@@ -275,8 +283,7 @@ sepby ::
   Parser a
   -> Parser s
   -> Parser (List a)
-sepby =
-  error "todo"
+sepby p sp = sepby1 p sp ||| return Nil
 
 -- | Write a parser that asserts that there is no remaining input.
 --
@@ -287,8 +294,9 @@ sepby =
 -- True
 eof ::
   Parser ()
-eof =
-  error "todo"
+eof = P f
+  where f Nil = Result Nil ()
+        f i = ErrorResult $ ExpectedEof i
 
 -- | Write a parser that produces a characer that satisfies all of the given predicates.
 --
@@ -311,8 +319,8 @@ eof =
 satisfyAll ::
   List (Char -> Bool)
   -> Parser Char
-satisfyAll =
-  error "todo"
+-- satisfyAll ps = satisfy $ \c -> all ($ c) ps
+satisfyAll ps = satisfy $ and . sequence ps
 
 -- | Write a parser that produces a characer that satisfies any of the given predicates.
 --
@@ -332,8 +340,7 @@ satisfyAll =
 satisfyAny ::
   List (Char -> Bool)
   -> Parser Char
-satisfyAny =
-  error "todo"
+satisfyAny ps = satisfy $ or . sequence ps
 
 -- | Write a parser that parses between the two given characters, separated by a comma character ','.
 --
@@ -361,5 +368,4 @@ betweenSepbyComma ::
   -> Char
   -> Parser a
   -> Parser (List a)
-betweenSepbyComma =
-  error "todo"
+betweenSepbyComma o c p = betweenCharTok o c $ sepby p (charTok ',')
