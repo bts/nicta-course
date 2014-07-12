@@ -202,13 +202,13 @@ jsonObject = betweenSepbyComma '{' '}' entry
 jsonValue ::
   Parser JsonValue
 jsonValue = spaces >> (
-  (jsonNull >> return JsonNull) |||
-  (jsonTrue >> return JsonTrue) |||
-  (jsonFalse >> return JsonFalse) |||
-  (jsonArray >>= return . JsonArray) |||
-  (jsonString >>= return . JsonString) |||
-  (jsonObject >>= return . JsonObject) |||
-  (jsonNumber >>= (\n -> return $ JsonRational False n)))
+  (JsonNull <$ jsonNull) |||
+  (JsonTrue <$ jsonTrue) |||
+  (JsonFalse <$ jsonFalse) |||
+  (JsonArray <$> jsonArray) |||
+  (JsonString <$> jsonString) |||
+  (JsonObject <$> jsonObject) |||
+  (JsonRational False <$> jsonNumber))
 
 -- | Read a file into a JSON value.
 --
