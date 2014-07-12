@@ -323,7 +323,7 @@ natural = flbindParser (list1 digit) (\s -> let Full int = read s
 -- /Tip:/ Use the @satisfy@ and @Data.Char.isSpace@ functions.
 space ::
   Parser Char
-space = is ' '
+space = is ' ' ||| is '\n' ||| is '\t'
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if
