@@ -1,9 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RebindableSyntax #-}
 
 module Course.JsonParser where
 
+import Course.Monad
 import Course.Core
 import Course.Parser
 import Course.MoreParser
@@ -29,7 +31,7 @@ import Course.Optional
 -- Result >def< "abc"
 --
 -- >>> parse jsonString "\"\\babc\"def"
--- Result >def< "babc"
+-- Result >def< "\babc"
 --
 -- >>> parse jsonString "\"\\u00abc\"def"
 -- Result >def< "\171c"
@@ -47,8 +49,16 @@ import Course.Optional
 -- True
 jsonString ::
   Parser Chars
-jsonString =
-  error "todo"
+jsonString = between (is '"') (charTok '"') $ list char
+  where char = escapedChar ||| noneof "\\\""
+        escapedChar = is '\\' >> (hex ||| escape <$> (oneof "\"\\/bfnrt"))
+        escape c = case c of
+          'b' -> '\b'
+          'f' -> '\f'
+          'n' -> '\n'
+          'r' -> '\r'
+          't' -> '\t'
+          _ -> c
 
 -- | Parse a JSON rational.
 --
@@ -76,8 +86,21 @@ jsonString =
 -- True
 jsonNumber ::
   Parser Rational
-jsonNumber =
-  error "todo"
+jsonNumber = do
+  sign <- option ' ' $ is '-'
+  intPart <- digits1
+  restPart <- option "" $ do
+    is '.'
+    decPart <- digits1
+    expPart <- option "" $ do
+      oneof "eE"
+      expSign <- oneof "+-"
+      exponent <- digits1
+      return $ 'e' :. expSign :. exponent
+    return $ '.' :. (decPart ++ expPart)
+  case readFloat $ sign :. (intPart ++ restPart) of
+    Full r -> return r
+    _ -> failed
 
 -- | Parse a JSON true literal.
 --
@@ -90,8 +113,7 @@ jsonNumber =
 -- True
 jsonTrue ::
   Parser Chars
-jsonTrue =
-  error "todo"
+jsonTrue = stringTok "true"
 
 -- | Parse a JSON false literal.
 --
@@ -104,8 +126,7 @@ jsonTrue =
 -- True
 jsonFalse ::
   Parser Chars
-jsonFalse =
-  error "todo"
+jsonFalse = stringTok "false"
 
 -- | Parse a JSON null literal.
 --
@@ -118,8 +139,7 @@ jsonFalse =
 -- True
 jsonNull ::
   Parser Chars
-jsonNull =
-  error "todo"
+jsonNull = stringTok "null"
 
 -- | Parse a JSON array.
 --
@@ -141,8 +161,7 @@ jsonNull =
 -- Result >< [JsonTrue,JsonString "abc",JsonArray [JsonFalse]]
 jsonArray ::
   Parser (List JsonValue)
-jsonArray =
-  error "todo"
+jsonArray = betweenSepbyComma '[' ']' jsonValue
 
 -- | Parse a JSON object.
 --
@@ -161,8 +180,12 @@ jsonArray =
 -- Result >xyz< [("key1",JsonTrue),("key2",JsonFalse)]
 jsonObject ::
   Parser Assoc
-jsonObject =
-  error "todo"
+jsonObject = betweenSepbyComma '{' '}' entry
+  where entry = do
+          k <- jsonString
+          charTok ':'
+          v <- jsonValue
+          return (k, v)
 
 -- | Parse a JSON value.
 --
@@ -178,8 +201,14 @@ jsonObject =
 -- Result >< [("key1",JsonTrue),("key2",JsonArray [JsonRational False (7 % 1),JsonFalse]),("key3",JsonObject [("key4",JsonNull)])]
 jsonValue ::
   Parser JsonValue
-jsonValue =
-   error "todo"
+jsonValue = spaces >> (
+  (jsonNull >> return JsonNull) |||
+  (jsonTrue >> return JsonTrue) |||
+  (jsonFalse >> return JsonFalse) |||
+  (jsonArray >>= return . JsonArray) |||
+  (jsonString >>= return . JsonString) |||
+  (jsonObject >>= return . JsonObject) |||
+  (jsonNumber >>= (\n -> return $ JsonRational False n)))
 
 -- | Read a file into a JSON value.
 --
@@ -187,5 +216,6 @@ jsonValue =
 readJsonValue ::
   Filename
   -> IO (ParseResult JsonValue)
-readJsonValue =
-  error "todo"
+readJsonValue filename = do
+  input <- readFile filename
+  return $ parse jsonValue input
