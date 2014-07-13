@@ -1,12 +1,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RebindableSyntax #-}
 
 module Course.Anagrams where
 
 import Course.Core
 import Course.List
 import Course.Functor
+import Course.Apply
+import Course.Applicative
+import Course.Bind
+import Course.Monad
 
 {-
 
@@ -32,13 +37,18 @@ anagrams ::
   Chars
   -> Filename
   -> IO (List Chars)
-anagrams =
-  error "todo"
+anagrams word' filename = do
+  let word = lowercase word'
+  dictWords <- lines . lowercase <$> (readFile filename)
+  let matches = intersectBy (==) (permutations word) dictWords
+  return $ filter (/= word) matches
+
+lowercase :: Chars -> Chars
+lowercase w = toLower <$> w
 
 -- Compare two strings for equality, ignoring case
 equalIgnoringCase ::
   Chars
   -> Chars
   -> Bool
-equalIgnoringCase =
-  error "todo"
+equalIgnoringCase = (==) `on` lowercase
