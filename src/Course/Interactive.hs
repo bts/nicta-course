@@ -12,6 +12,7 @@ import Course.Monad
 import Course.Traversable
 import Course.List
 import Course.Optional
+import Data.Char (toUpper)
 
 -- | Eliminates any value over which a functor is defined.
 vooid ::
@@ -28,7 +29,7 @@ vooid =
   -> m b
   -> m b
 (>-) a =
-  (>>=) a . const
+  (a >>=) . const
 
 -- | Runs an action until a result of that action satisfies a given predicate.
 untilM ::
@@ -84,7 +85,9 @@ data Op =
 convertInteractive ::
   IO ()
 convertInteractive =
-  error "todo"
+  putStr "Enter a string to upper-case: " >-
+  getLine >>= \str ->
+  putStrLn (toUpper <$> str)
 
 -- |
 --
@@ -112,7 +115,13 @@ convertInteractive =
 reverseInteractive ::
   IO ()
 reverseInteractive =
-  error "todo"
+  putStr "Name of file to reverse: " >-
+  getLine >>= \src ->
+  putStr "Name of file to write: " >-
+  getLine >>= \dest ->
+  readFile src >>= \input ->
+  writeFile dest (reverse input) >-
+  putStrLn ""
 
 -- |
 --
@@ -135,10 +144,19 @@ reverseInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
+encodeChar :: Char -> Chars
+encodeChar c = case c of
+  ' ' -> "%20"
+  '\t' -> "%09"
+  '\"' -> "%22"
+  _ -> c :. Nil
+
 encodeInteractive ::
   IO ()
 encodeInteractive =
-  error "todo"
+  putStr "String to URL-encode: " >-
+  getLine >>= \input ->
+  putStrLn $ input >>= encodeChar
 
 interactive ::
   IO ()
