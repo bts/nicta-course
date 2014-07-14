@@ -14,8 +14,11 @@ fastAnagrams ::
   Chars
   -> Filename
   -> IO (List Chars)
-fastAnagrams =
-  error "todo"
+fastAnagrams word filename =
+  let findMatches dictWords = let dictSet = foldRight S.insert S.empty dictWords
+                              in filter (\p -> S.member p dictSet) perms
+      perms = permutations (toLower <$> word)
+  in (findMatches . lines . (toLower <$>)) <$> (readFile filename)
 
 newtype NoCaseString =
   NoCaseString {
